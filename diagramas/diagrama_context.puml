@@ -1,0 +1,22 @@
+@startuml c4-context
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4P/C4_Context.puml
+
+Person(customer, "Comerciante", "Usa o sistema para registrar lançamentos e consultar saldo diário")
+System_Boundary(system, "Cash Flow System") {
+  System(transactionSvc, "Transaction Service", "Registra lançamentos (débito/crédito). API pública REST.")
+  System(consolidationSvc, "Daily Consolidation Service", "Gera e serve saldo diário consolidado (leitura).")
+  System(dbExternal, "PostgreSQL (per-service)", "Banco(s) por serviço")
+  System(broker, "Message Broker (Kafka/RabbitMQ)", "Mensageria durável para comunicação entre serviços")
+  System(gateway, "API Gateway", "Roteia tráfego, autenticação, rate limiting")
+}
+
+Rel(customer, gateway, "HTTPS", "Usa UI ou scripts (curl/postman)")
+Rel(gateway, transactionSvc, "HTTP/JSON", "Roteia requisições de transações")
+Rel(gateway, consolidationSvc, "HTTP/JSON", "Roteia requisições de saldo diário")
+Rel(transactionSvc, dbExternal, "JDBC/EF Core", "Persiste transações")
+Rel(consolidationSvc, dbExternal, "JDBC/EF Core", "Persiste read models / agregações")
+Rel(transactionSvc, broker, "Produce", "Publica TransactionCreated / Updated")
+Rel(consolidationSvc, broker, "Consume", "Consome eventos e atualiza agregados")
+
+@enduml

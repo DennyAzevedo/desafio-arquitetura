@@ -1,0 +1,21 @@
+@startuml c4-components-tx
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4P/C4_Component.puml
+
+Container(transactionApi, "Transaction Service", "ASP.NET Core", "")
+Component(api, "REST API Controller", "Recebe requests HTTP, valida e envia para Application Layer")
+Component(app, "Application Layer / MediatR Handlers", "Valida regras e orquestra operações")
+Component(domain, "Domain Models & Services", "Entidades: Transaction, Merchant; domain rules")
+Component(repo, "Repository + EF Core", "Persistência de entidades")
+Component(outbox, "Outbox Writer", "Grava eventos em tabela outbox na mesma tx")
+Component(outboxDispatcher, "Outbox Dispatcher (Background Worker)", "Lê outbox e publica no broker")
+Component(events, "Event Producer (Rabbit/Kafka client)", "Publica mensagens duráveis")
+
+Rel(api, app, "Calls")
+Rel(app, domain, "Uses")
+Rel(app, repo, "Reads/Writes")
+Rel(repo, outbox, "Writes event record (same transaction)")
+Rel(outbox, outboxDispatcher, "Polls")
+Rel(outboxDispatcher, events, "Publishes")
+
+@enduml

@@ -1,0 +1,92 @@
+# Cash Flow System — Controle de Lançamentos e Consolidado Diário
+
+**Tecnologias principais:** C# (.NET 8 / ASP.NET Core), PostgreSQL, Docker Compose, RabbitMQ (MVP) / Kafka (ideal), Redis (opcional), Serilog, xUnit.
+
+Este repositório contém a proposta arquitetural e o esqueleto para o desafio técnico: controlar lançamentos (débito/crédito) e fornecer um consolidado diário de saldos. A solução prioriza **escalabilidade**, **resiliência** e **isolamento entre serviços**.
+
+> Prazo do desafio: **10/12/2025** — entregue uma proposta arquitetural ideal e uma implementação mínima funcional (MVP).
+
+---
+
+## Visão geral
+
+A solução proposta é composta por dois serviços principais:
+
+- **Transaction Service** — API REST (ASP.NET Core) responsável por receber e persistir lançamentos. Deve permanecer disponível mesmo quando o Consolidation Service estiver indisponível.
+- **Consolidation Service** — consome eventos de transações e mantém o *read model* (saldo diário consolidado). Expõe endpoints de leitura.
+
+Comunicação entre serviços por mensageria (evento `TransactionCreated`). Para garantir durabilidade e evitar perda de eventos, usa-se o **Outbox Pattern** no Transaction Service.
+
+---
+
+## Arquitetura (resumo)
+
+### Ideal (recomendado para produção)
+
+- Microserviços desacoplados (Transaction + Consolidation).
+- **Kafka** como broker (particionamento, replicação, retenção).
+- Outbox pattern para entrega confiável de eventos.
+- CQRS: separação write/read; read model otimizado (tabela agregada + Redis cache).
+- Observability: OpenTelemetry + Prometheus + Grafana + Serilog -> ELK/Loki.
+- Deploy em Kubernetes com autoscaling, readiness/liveness probes, e Multi-AZ.
+
+### MVP (implementável no prazo)
+
+- Mantém a mesma decomposição lógica (Transaction + Consolidation).
+- **RabbitMQ** como broker (mais simples para orquestrar localmente).
+- Outbox simples + background dispatcher.
+- docker-compose para desenvolvimento local.
+- Testes: unitários + 1 integração end-to-end (e2e) com docker-compose.
+
+---
+
+## Componentes principais
+
+- **API Gateway** (opcional no MVP): roteia tráfego, TLS termination, rate limiting.
+
+- **Transaction Service**
+  - POST `/api/v1/transactions` — valida e persiste transações.
+  - Outbox table `outbox_events` escrita na mesma transação do `transactions`.
+  - Background worker publica eventos para o broker.
+
+- **Consolidation Service**
+  - Consumer do broker atualiza `daily_balances`.
+  - GET `/api/v1/consolidations/daily?merchantId=&date=` — retorna saldo.
+  - Job admin para recomputar a partir do event store (quando necessário).
+
+- **Persistence**
+  - PostgreSQL por serviço (pode ser um único container com schemas separados no MVP).
+
+- **Broker**
+  - RabbitMQ (MVP) ou Kafka (ideal).
+
+- **Cache (opcional)**
+  - Redis para reduzir latência em leituras frequentes.
+
+---
+
+## Fluxo de dados (exemplo)
+
+1. Cliente -> Transaction Service: `POST /api/v1/transactions`.
+2. Transaction Service: valida e persiste transação + insere evento em `outbox_events` na mesma transação.
+3. Outbox Dispatcher publica `TransactionCreated` no broker.
+4. Consolidation Service consome o evento e atualiza `daily_balances`.
+5. Cliente -> Consolidation Service: `GET /api/v1/consolidations/daily` para consulta.
+
+---
+
+## Esquema de eventos (JSON - MVP)
+
+```json
+{
+  "eventType": "TransactionCreated",
+  "eventId": "uuid",
+  "occurredAt": "2025-12-09T14:12:00Z",
+  "merchantId": "merchant-123",
+  "transactionId": "tx-456",
+  "amount": 150.50,
+  "currency": "BRL",
+  "direction": "Credit",
+  "metadata": { "source": "web-ui" },
+  "schemaVersion": "v1"
+}
