@@ -33,6 +33,7 @@ bld/
 
 # Visual Studio Code cache/options directory
 .vscode/*
+.vs/
 
 # JetBrains
 .idea

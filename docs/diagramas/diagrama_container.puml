@@ -1,0 +1,53 @@
+@startuml Desafio - Diagrama Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+AddElementTag("MVP", $bgColor="#55b167ff")
+AddElementTag("IDEAL", $bgColor="#6793d6ff")
+
+Person(user, "Comerciante")
+Person(sre, "SRE/Observability")
+
+System_Boundary(cfs, "Cash Flow System - Ideal") {
+
+    Container(frontend, "FrontEnd Web", "SPA: React/Angular/Vue", "Interface do usuário final", $tags="IDEAL")
+
+    Container(apigateway, "API Gateway", "NGINX / YARP / Kong", "Roteamento, rate limiting, OIDC, TLS termination", $tags="IDEAL")
+
+    Container(transactionService, "Transaction Service", "ASP.NET Core", "Registra transações, Outbox, publica em Kafka", $tags="MVP")
+
+    Container(consolidationService, "Consolidation Service", "ASP.NET Core", "Mantém modelo consolidado e consultas", $tags="MVP")
+
+    ContainerDb(transactionDb, "TransactionDB", "PostgreSQL", "Banco de gravação", $tags="MVP")
+
+    ContainerDb(readDb, "ReadDB", "PostgreSQL", "Read model consolidado", $tags="MVP")
+
+    Container(kafka, "Kafka Cluster", "Mensageria", "Entrega eventos escalável", $tags="IDEAL")
+
+    Container(vault, "Vault", "Hashicorp", "Segredos seguros", $tags="IDEAL")
+
+    Container(obs, "Observabilidade", "Prometheus/Grafana/Loki/OTel", "Coleta de logs, métricas e tracing", $tags="IDEAL")
+
+    Container(cache, "Redis Cache", "Redis", "Cache de consultas", $tags="IDEAL")
+}
+
+Rel(user, frontend, "Interage via HTTPS")
+
+Rel(frontend, apigateway, "Fluxo HTTP + OIDC")
+Rel(frontend, apigateway, "Autenticação", "OIDC")
+Rel(apigateway, transactionService, "Encaminha requisições")
+Rel(apigateway, consolidationService, "Encaminha requisições")
+
+Rel(transactionService, transactionDb, "CRUD")
+Rel(transactionService, kafka, "Publica eventos TransactionCreated")
+Rel(kafka, consolidationService, "Entrega eventos")
+Rel(consolidationService, readDb, "Atualiza saldos")
+Rel(consolidationService, cache, "Leitura / escrita de cache")
+
+Rel(transactionService, vault, "Lê segredos")
+Rel(consolidationService, vault, "Lê segredos")
+
+Rel(transactionService, obs, "Logs / Métricas / Tracing")
+Rel(consolidationService, obs, "Logs / Métricas / Tracing")
+Rel(sre, obs, "Monitoramento")
+
+@enduml

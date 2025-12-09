@@ -1,0 +1,20 @@
+@startuml Consolidation Service - MVP - Diagrama de Componentes
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(consolidationService, "Consolidation Service", "ASP.NET Core")
+
+Component(consCtrl, "ConsolidationsController", "API Controller")
+Component(queryService, "ConsolidationQueryService", "Consulta Read Model")
+Component(readRepo, "DailyBalanceRepository", "Persistência via EF Core")
+Component(readDbCtx, "ReadDbContext", "EF Core DbContext")
+Component(eventConsumer, "EventConsumer (HostedService)", "Consome eventos")
+Component(eventProcessor, "EventProcessor", "Transforma eventos em atualizações")
+
+Rel(consCtrl, queryService, "Consulta")
+Rel(queryService, readRepo, "Consulta saldo")
+Rel(readRepo, readDbCtx, "Usa")
+
+Rel(eventConsumer, eventProcessor, "Envia evento")
+Rel(eventProcessor, readRepo, "Atualiza read-model")
+
+@enduml

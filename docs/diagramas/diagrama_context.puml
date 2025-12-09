@@ -1,0 +1,43 @@
+@startuml Desafio - Diagrama de Contexto
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' Tags para cores
+AddElementTag("MVP", $bgColor="#55b167ff")
+AddElementTag("IDEAL", $bgColor="#6793d6ff")
+
+Person(user, "Comerciante", "Usuário do sistema.")
+Person(sre, "Engenheiro de Observabilidade", "Monitora KPIs, logs e alertas.")
+Person(admin, "Administrador/DevOps", "Gerencia segredos e deploys.")
+
+System_Ext(authProvider, "OIDC Provider", "Keycloak/Azure AD/Auth0", $tags="IDEAL")
+System_Ext(broker, "Mensageria", "RabbitMQ (MVP) / Kafka (Ideal)", $tags="MVP")
+System_Ext(vault, "Vault", "Gerenciamento de segredos", $tags="IDEAL")
+System_Ext(observability, "Observability Stack", "Prometheus, Grafana, Loki, OTel", $tags="IDEAL")
+
+System_Boundary(cfs, "Cash Flow System") {
+
+    System(frontend, "FrontEnd Web", "React/Angular/Vue", $tags="IDEAL")
+
+    System(transactionService, "Transaction Service", "Registra transações.", $tags="MVP")
+    System(consolidationService, "Consolidation Service", "Consulta saldos diários.", $tags="MVP")
+}
+
+Rel(user, frontend, "Interage com a aplicação web (HTTPS)")
+Rel(frontend, authProvider, "Fluxo OIDC (Login)", "OIDC")
+
+Rel(frontend, transactionService, "POST lançamentos (HTTPS)", "via API Gateway / Ideal")
+Rel(frontend, consolidationService, "GET saldos (HTTPS)", "via API Gateway / Ideal")
+
+Rel(transactionService, broker, "Publica eventos TransactionCreated")
+Rel(broker, consolidationService, "Entrega eventos")
+
+Rel(transactionService, vault, "Obtém segredos seguros")
+Rel(consolidationService, vault, "Obtém segredos seguros")
+
+Rel(transactionService, observability, "Métricas/Logs/Tracing")
+Rel(consolidationService, observability, "Métricas/Logs/Tracing")
+
+Rel(sre, observability, "Monitora dashboards/alertas")
+Rel(admin, vault, "Gerencia segredos")
+
+@enduml
