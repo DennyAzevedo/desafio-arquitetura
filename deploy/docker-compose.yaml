@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: cashflow_postgres
+    environment:
+      POSTGRES_USER: cashflow
+      POSTGRES_PASSWORD: cashflow123
+      POSTGRES_DB: cashflowdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cashflow-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cashflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  transaction-service:
+    build:
+      context: ../
+      dockerfile: ./services/TransactionService/Dockerfile
+    container_name: transaction_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__CashFlowDb: "Host=postgres;Database=cashflowdb;Username=cashflow;Password=cashflow123"
+    ports:
+      - "5001:80"
+    networks:
+      - cashflow-net
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  consolidation-service:
+    build:
+      context: ../
+      dockerfile: ./services/ConsolidationService/Dockerfile
+    container_name: consolidation_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__CashFlowDb: "Host=postgres;Database=cashflowdb;Username=cashflow;Password=cashflow123"
+    ports:
+      - "5002:80"
+    networks:
+      - cashflow-net
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+networks:
+  cashflow-net:
+
+volumes:
+  postgres_data:

@@ -12,10 +12,14 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.MerchantId).IsRequired();
+        builder.Property(x => x.MerchantId).HasMaxLength(100).IsRequired();
         builder.Property(x => x.Amount).HasColumnType("decimal(18,2)").IsRequired();
         builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
         builder.Property(x => x.Direction).IsRequired();
         builder.Property(x => x.OccurredAt).IsRequired();
+        builder.Property(x => x.CreatedAt).IsRequired();
+
+        builder.HasIndex(x => x.MerchantId);
+        builder.HasIndex(x => x.OccurredAt);
     }
 }

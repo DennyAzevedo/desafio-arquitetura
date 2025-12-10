@@ -1,6 +1,7 @@
 using ConsolidationService.Application.Services;
 using ConsolidationService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using static ConsolidationService.Infrastructure.Persistence.ReadDbContext;
 
 namespace ConsolidationService.Infrastructure.Persistence.Repositories;
 
@@ -13,21 +14,20 @@ public class DailyBalanceRepository : IDailyBalanceRepository
         _context = context;
     }
 
-    public async Task<DailyBalance?> GetByMerchantAndDateAsync(Guid merchantId, DateTime date)
+    public async Task<DailyBalance?> GetDailyBalanceAsync(string merchantId, DateTime date, CancellationToken cancellationToken = default)
     {
-        return await _context.DailyBalances
-            .FirstOrDefaultAsync(x => x.MerchantId == merchantId && x.Date == date.Date);
-    }
+        var targetDate = date.Date;
+        
+        var transactions = await _context.Set<TransactionEntity>()
+            .Where(t => t.MerchantId == merchantId && t.OccurredAt.Date == targetDate)
+            .ToListAsync(cancellationToken);
 
-    public async Task AddAsync(DailyBalance dailyBalance)
-    {
-        await _context.DailyBalances.AddAsync(dailyBalance);
-        await _context.SaveChangesAsync();
-    }
+        if (!transactions.Any())
+            return null;
 
-    public async Task UpdateAsync(DailyBalance dailyBalance)
-    {
-        _context.DailyBalances.Update(dailyBalance);
-        await _context.SaveChangesAsync();
+        var totalCredit = transactions.Where(t => t.Direction == 0).Sum(t => t.Amount);
+        var totalDebit = transactions.Where(t => t.Direction == 1).Sum(t => t.Amount);
+
+        return new DailyBalance(merchantId, targetDate, totalCredit, totalDebit);
     }
 }

@@ -1,0 +1,23 @@
+@startuml Desafio - Diagrama de Container - MVP
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+AddElementTag("MVP", $bgColor="#55b167ff")
+
+Person(merchant, "Comerciante", "Usuário do sistema.", $tags="MVP")
+
+System_Boundary(cashflow, "Cash Flow System - MVP") {
+
+  Container(transactionApi, "TransactionService API", "ASP.NET Core", "Registra lançamentos (crédito/débito).", $tags="MVP")
+
+  Container(consolidationApi, "ConsolidationService API", "ASP.NET Core", "Fornece consultas de saldo diário consolidado.", $tags="MVP")
+
+  ContainerDb(pgsql, "CashFlowDB", "PostgreSQL", "Banco único com tabelas de lançamentos e visão de consolidação.", $tags="MVP")
+}
+
+Rel(merchant, transactionApi, "POST /transactions", "HTTP/JSON")
+Rel(merchant, consolidationApi, "GET /consolidations/daily", "HTTP/JSON")
+
+Rel(transactionApi, pgsql, "INSERT/UPDATE em lançamentos", "SQL")
+Rel(consolidationApi, pgsql, "SELECT agregado (saldo diário)", "SQL")
+
+@enduml

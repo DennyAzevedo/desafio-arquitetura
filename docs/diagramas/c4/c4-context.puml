@@ -1,0 +1,45 @@
+@startuml Desafio - Diagrama de Contexto
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' Tags para cores
+AddElementTag("MVP", $bgColor="#55b167ff")
+AddElementTag("IDEAL", $bgColor="#6793d6ff")
+
+Person(merchant, "Comerciante", "Usuário que registra lançamentos e consulta o fluxo de caixa.", $tags="MVP")
+Person(sre, "SRE / Observabilidade", "Monitora saúde e métricas do sistema.", $tags="IDEAL")
+
+System_Boundary(cashflow, "Cash Flow System") {
+
+  ' Ideal: Frontend web
+  System(frontend, "Cash Flow Web App", "SPA (React/Angular/Blazor)", "Interface web para o comerciante registrar lançamentos e consultar saldos.", $tags="IDEAL")
+
+  ' MVP/Ideal: APIs de backend
+  System(transactionApi, "TransactionService API", "ASP.NET Core", "Serviço responsável por registrar lançamentos financeiros (débito/crédito).", $tags="MVP")
+
+  System(consolidationApi, "ConsolidationService API", "ASP.NET Core", "Serviço responsável por fornecer consultas de saldo diário consolidado.", $tags="MVP")
+}
+
+' Sistemas externos Ideais
+System_Ext(oidc, "Identity Provider (OIDC)", "Keycloak / Auth0 / Azure AD", "Responsável pela autenticação de usuários na arquitetura ideal.", $tags="IDEAL")
+
+System_Ext(obs, "Observability Stack", "Prometheus / Grafana / Loki / OpenTelemetry", "Coleta métricas, logs e traces do sistema.", $tags="IDEAL")
+
+' Relações MVP / Ideal
+
+' MVP: usuário chama diretamente as APIs (sem frontend)
+Rel(merchant, transactionApi, "Registra lançamentos (HTTP/JSON)", "MVP")
+Rel(merchant, consolidationApi, "Consulta saldo diário (HTTP/JSON)", "MVP")
+
+' Ideal: usuário interage via frontend
+Rel(merchant, frontend, "Usa via navegador (HTTPS)", "IDEAL")
+Rel(frontend, oidc, "Fluxo de login OIDC", "OIDC / OAuth2", "IDEAL")
+Rel(frontend, transactionApi, "Chama API de lançamentos (HTTPS)", "IDEAL")
+Rel(frontend, consolidationApi, "Chama API de consultas (HTTPS)", "IDEAL")
+
+' Observabilidade (Ideal)
+Rel(transactionApi, obs, "Envia logs / métricas / traces", "IDEAL")
+Rel(consolidationApi, obs, "Envia logs / métricas / traces", "IDEAL")
+Rel(sre, obs, "Consulta dashboards e alertas", "IDEAL")
+
+@enduml
+

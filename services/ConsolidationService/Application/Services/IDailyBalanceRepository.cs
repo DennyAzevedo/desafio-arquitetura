@@ -4,7 +4,5 @@ namespace ConsolidationService.Application.Services;
 
 public interface IDailyBalanceRepository
 {
-    Task<DailyBalance?> GetByMerchantAndDateAsync(Guid merchantId, DateTime date);
-    Task AddAsync(DailyBalance dailyBalance);
-    Task UpdateAsync(DailyBalance dailyBalance);
+    Task<DailyBalance?> GetDailyBalanceAsync(string merchantId, DateTime date, CancellationToken cancellationToken = default);
 }

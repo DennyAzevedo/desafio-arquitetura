@@ -1,100 +1,53 @@
-using ConsolidationService.Application.Handlers;
 using ConsolidationService.Application.Services;
 using ConsolidationService.Domain.Entities;
-using ConsolidationService.Infrastructure.Messaging;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace ConsolidationService.Tests.Unit;
 
-public class EventProcessorTests
+public class ConsolidationQueryServiceTests
 {
     private readonly Mock<IDailyBalanceRepository> _repositoryMock;
-    private readonly Mock<ILogger<EventProcessor>> _loggerMock;
-    private readonly EventProcessor _processor;
+    private readonly ConsolidationQueryService _service;
 
-    public EventProcessorTests()
+    public ConsolidationQueryServiceTests()
     {
         _repositoryMock = new Mock<IDailyBalanceRepository>();
-        _loggerMock = new Mock<ILogger<EventProcessor>>();
-        _processor = new EventProcessor(_repositoryMock.Object, _loggerMock.Object);
+        _service = new ConsolidationQueryService(_repositoryMock.Object);
     }
 
     [Fact]
-    public async Task ProcessTransactionCreatedAsync_WithCreditDirection_ShouldAddCredit()
+    public async Task GetDailyBalanceAsync_WithValidData_ShouldReturnDto()
     {
-        var merchantId = Guid.NewGuid();
+        var merchantId = "merchant123";
         var date = DateTime.UtcNow.Date;
-        var amount = 100m;
+        var dailyBalance = new DailyBalance(merchantId, date, 100m, 30m);
 
-        var @event = new TransactionCreatedEvent(
-            Guid.NewGuid(),
-            merchantId,
-            "CREDIT",
-            amount,
-            date
-        );
-
-        var dailyBalance = new DailyBalance(merchantId, date);
-        _repositoryMock.Setup(x => x.GetByMerchantAndDateAsync(merchantId, date))
+        _repositoryMock.Setup(x => x.GetDailyBalanceAsync(merchantId, date, It.IsAny<CancellationToken>()))
             .ReturnsAsync(dailyBalance);
 
-        await _processor.ProcessTransactionCreatedAsync(@event);
+        var query = new ConsolidationService.Application.Queries.GetDailyBalanceQuery(merchantId, date);
+        var result = await _service.GetDailyBalanceAsync(query);
 
-        _repositoryMock.Verify(x => x.UpdateAsync(It.Is<DailyBalance>(
-            db => db.TotalCredit == amount && db.TotalDebit == 0 && db.Balance == amount
-        )), Times.Once);
+        result.Should().NotBeNull();
+        result!.MerchantId.Should().Be(merchantId);
+        result.TotalCredit.Should().Be(100m);
+        result.TotalDebit.Should().Be(30m);
+        result.Balance.Should().Be(70m);
     }
 
     [Fact]
-    public async Task ProcessTransactionCreatedAsync_WithDebitDirection_ShouldAddDebit()
+    public async Task GetDailyBalanceAsync_WhenNoData_ShouldReturnNull()
     {
-        var merchantId = Guid.NewGuid();
+        var merchantId = "merchant123";
         var date = DateTime.UtcNow.Date;
-        var amount = 50m;
 
-        var @event = new TransactionCreatedEvent(
-            Guid.NewGuid(),
-            merchantId,
-            "DEBIT",
-            amount,
-            date
-        );
-
-        var dailyBalance = new DailyBalance(merchantId, date);
-        _repositoryMock.Setup(x => x.GetByMerchantAndDateAsync(merchantId, date))
-            .ReturnsAsync(dailyBalance);
-
-        await _processor.ProcessTransactionCreatedAsync(@event);
-
-        _repositoryMock.Verify(x => x.UpdateAsync(It.Is<DailyBalance>(
-            db => db.TotalDebit == amount && db.TotalCredit == 0 && db.Balance == -amount
-        )), Times.Once);
-    }
-
-    [Fact]
-    public async Task ProcessTransactionCreatedAsync_WhenDailyBalanceDoesNotExist_ShouldCreateNew()
-    {
-        var merchantId = Guid.NewGuid();
-        var date = DateTime.UtcNow.Date;
-        var amount = 200m;
-
-        var @event = new TransactionCreatedEvent(
-            Guid.NewGuid(),
-            merchantId,
-            "CREDIT",
-            amount,
-            date
-        );
-
-        _repositoryMock.Setup(x => x.GetByMerchantAndDateAsync(merchantId, date))
+        _repositoryMock.Setup(x => x.GetDailyBalanceAsync(merchantId, date, It.IsAny<CancellationToken>()))
             .ReturnsAsync((DailyBalance?)null);
 
-        await _processor.ProcessTransactionCreatedAsync(@event);
+        var query = new ConsolidationService.Application.Queries.GetDailyBalanceQuery(merchantId, date);
+        var result = await _service.GetDailyBalanceAsync(query);
 
-        _repositoryMock.Verify(x => x.AddAsync(It.Is<DailyBalance>(
-            db => db.MerchantId == merchantId && db.TotalCredit == amount
-        )), Times.Once);
+        result.Should().BeNull();
     }
 }

@@ -6,66 +6,60 @@ namespace ConsolidationService.Tests.Unit;
 public class DailyBalanceCalculationTests
 {
     [Fact]
-    public void DailyBalance_WhenCreated_ShouldHaveZeroBalance()
+    public void DailyBalance_WhenCreated_ShouldCalculateBalanceCorrectly()
     {
-        var merchantId = Guid.NewGuid();
+        var merchantId = "merchant123";
         var date = DateTime.UtcNow.Date;
+        var totalCredit = 100m;
+        var totalDebit = 30m;
 
-        var dailyBalance = new DailyBalance(merchantId, date);
+        var dailyBalance = new DailyBalance(merchantId, date, totalCredit, totalDebit);
 
-        dailyBalance.TotalCredit.Should().Be(0);
-        dailyBalance.TotalDebit.Should().Be(0);
-        dailyBalance.Balance.Should().Be(0);
+        dailyBalance.MerchantId.Should().Be(merchantId);
+        dailyBalance.Date.Should().Be(date);
+        dailyBalance.TotalCredit.Should().Be(totalCredit);
+        dailyBalance.TotalDebit.Should().Be(totalDebit);
+        dailyBalance.Balance.Should().Be(70m);
     }
 
     [Fact]
-    public void AddCredit_ShouldIncreaseBalance()
+    public void DailyBalance_WithOnlyCredits_ShouldHavePositiveBalance()
     {
-        var dailyBalance = new DailyBalance(Guid.NewGuid(), DateTime.UtcNow.Date);
+        var dailyBalance = new DailyBalance("merchant123", DateTime.UtcNow.Date, 200m, 0m);
 
-        dailyBalance.AddCredit(100m);
-
-        dailyBalance.TotalCredit.Should().Be(100m);
-        dailyBalance.Balance.Should().Be(100m);
-    }
-
-    [Fact]
-    public void AddDebit_ShouldDecreaseBalance()
-    {
-        var dailyBalance = new DailyBalance(Guid.NewGuid(), DateTime.UtcNow.Date);
-
-        dailyBalance.AddDebit(50m);
-
-        dailyBalance.TotalDebit.Should().Be(50m);
-        dailyBalance.Balance.Should().Be(-50m);
-    }
-
-    [Fact]
-    public void Balance_ShouldBeCalculatedCorrectly()
-    {
-        var dailyBalance = new DailyBalance(Guid.NewGuid(), DateTime.UtcNow.Date);
-
-        dailyBalance.AddCredit(200m);
-        dailyBalance.AddDebit(75m);
-        dailyBalance.AddCredit(50m);
-
-        dailyBalance.TotalCredit.Should().Be(250m);
-        dailyBalance.TotalDebit.Should().Be(75m);
-        dailyBalance.Balance.Should().Be(175m);
-    }
-
-    [Fact]
-    public void MultipleCreditsAndDebits_ShouldAccumulateCorrectly()
-    {
-        var dailyBalance = new DailyBalance(Guid.NewGuid(), DateTime.UtcNow.Date);
-
-        dailyBalance.AddCredit(100m);
-        dailyBalance.AddCredit(150m);
-        dailyBalance.AddDebit(30m);
-        dailyBalance.AddDebit(20m);
-
-        dailyBalance.TotalCredit.Should().Be(250m);
-        dailyBalance.TotalDebit.Should().Be(50m);
         dailyBalance.Balance.Should().Be(200m);
+    }
+
+    [Fact]
+    public void DailyBalance_WithOnlyDebits_ShouldHaveNegativeBalance()
+    {
+        var dailyBalance = new DailyBalance("merchant123", DateTime.UtcNow.Date, 0m, 150m);
+
+        dailyBalance.Balance.Should().Be(-150m);
+    }
+
+    [Fact]
+    public void DailyBalance_WithEqualCreditsAndDebits_ShouldHaveZeroBalance()
+    {
+        var dailyBalance = new DailyBalance("merchant123", DateTime.UtcNow.Date, 100m, 100m);
+
+        dailyBalance.Balance.Should().Be(0m);
+    }
+
+    [Fact]
+    public void DailyBalance_WithVariousAmounts_ShouldCalculateBalanceCorrectly()
+    {
+        var testCases = new[]
+        {
+            new { Credit = 500m, Debit = 200m, Expected = 300m },
+            new { Credit = 100m, Debit = 150m, Expected = -50m },
+            new { Credit = 0m, Debit = 0m, Expected = 0m }
+        };
+
+        foreach (var testCase in testCases)
+        {
+            var dailyBalance = new DailyBalance("merchant123", DateTime.UtcNow.Date, testCase.Credit, testCase.Debit);
+            dailyBalance.Balance.Should().Be(testCase.Expected);
+        }
     }
 }

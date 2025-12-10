@@ -11,22 +11,20 @@ namespace TransactionService.Tests.Unit;
 public class CreateTransactionTests
 {
     private readonly Mock<ITransactionRepository> _transactionRepositoryMock;
-    private readonly Mock<IOutboxRepository> _outboxRepositoryMock;
     private readonly TransactionApplicationService _service;
 
     public CreateTransactionTests()
     {
         _transactionRepositoryMock = new Mock<ITransactionRepository>();
-        _outboxRepositoryMock = new Mock<IOutboxRepository>();
-        _service = new TransactionApplicationService(_transactionRepositoryMock.Object, _outboxRepositoryMock.Object);
+        _service = new TransactionApplicationService(_transactionRepositoryMock.Object);
     }
 
     [Fact]
-    public async Task CreateTransactionAsync_WithValidCommand_ShouldCreateTransactionAndOutboxEvent()
+    public async Task CreateTransactionAsync_WithValidCommand_ShouldCreateTransaction()
     {
         // Arrange
         var command = new CreateTransactionCommand(
-            Guid.NewGuid(),
+            "merchant123",
             100m,
             "BRL",
             TransactionDirection.Credit,
@@ -37,14 +35,13 @@ public class CreateTransactionTests
         var result = await _service.CreateTransactionAsync(command);
 
         // Assert
-        result.Should().NotBeNull();
-        result.MerchantId.Should().Be(command.MerchantId);
-        result.Amount.Should().Be(command.Amount);
-        result.Currency.Should().Be(command.Currency);
-        result.Direction.Should().Be(command.Direction);
-
-        _transactionRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Transaction>()), Times.Once);
-        _outboxRepositoryMock.Verify(x => x.AddAsync(It.IsAny<OutboxEvent>()), Times.Once);
+        result.Should().NotBeEmpty();
+        _transactionRepositoryMock.Verify(x => x.AddAsync(It.Is<Transaction>(
+            t => t.MerchantId == command.MerchantId && 
+                 t.Amount == command.Amount && 
+                 t.Currency == command.Currency && 
+                 t.Direction == command.Direction
+        ), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -52,7 +49,7 @@ public class CreateTransactionTests
     {
         // Arrange
         var command = new CreateTransactionCommand(
-            Guid.NewGuid(),
+            "merchant456",
             50m,
             "USD",
             TransactionDirection.Debit,
@@ -63,18 +60,18 @@ public class CreateTransactionTests
         var result = await _service.CreateTransactionAsync(command);
 
         // Assert
-        result.Direction.Should().Be(TransactionDirection.Debit);
+        result.Should().NotBeEmpty();
         _transactionRepositoryMock.Verify(x => x.AddAsync(It.Is<Transaction>(
             t => t.Direction == TransactionDirection.Debit && t.Amount == 50m
-        )), Times.Once);
+        ), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task CreateTransactionAsync_ShouldCreateOutboxEventWithCorrectType()
+    public async Task CreateTransactionAsync_WithValidData_ShouldReturnTransactionId()
     {
         // Arrange
         var command = new CreateTransactionCommand(
-            Guid.NewGuid(),
+            "merchant789",
             200m,
             "BRL",
             TransactionDirection.Credit,
@@ -82,11 +79,10 @@ public class CreateTransactionTests
         );
 
         // Act
-        await _service.CreateTransactionAsync(command);
+        var result = await _service.CreateTransactionAsync(command);
 
         // Assert
-        _outboxRepositoryMock.Verify(x => x.AddAsync(It.Is<OutboxEvent>(
-            e => e.Type == "TransactionCreated"
-        )), Times.Once);
+        result.Should().NotBeEmpty();
+        _transactionRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Transaction>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

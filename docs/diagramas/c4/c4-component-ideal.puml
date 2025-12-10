@@ -1,0 +1,46 @@
+@startuml Desafio - Diagrama de Componentes
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+AddElementTag("MVP", $bgColor="#55b167ff")
+AddElementTag("IDEAL", $bgColor="#6793d6ff")
+
+Person(merchant, "Comerciante", "Usuário do sistema.", $tags="MVP")
+
+Container_Boundary(ideal, "Cash Flow System - Ideal (Visão de Componentes)") {
+
+  Component(frontend, "Cash Flow Web App", "SPA", "Camada de apresentação, responsável por autenticação via OIDC e UX.", $tags="IDEAL")
+
+  Component(apiGateway, "API Gateway", "Gateway / Reverse Proxy", "Responsável por roteamento, autenticação, rate limiting e cross-cutting.", $tags="IDEAL")
+
+  Component(txApi, "TransactionService API", "ASP.NET Core", "Endpoint de escrita: criação de lançamentos.", $tags="MVP")
+
+  Component(consolApi, "ConsolidationService API", "ASP.NET Core", "Endpoint de leitura: consulta de saldos diários.", $tags="MVP")
+
+  Component(redis, "Redis Cache", "Redis", "Cache de consolidados para respostas rápidas e redução de carga no banco.", $tags="IDEAL")
+
+  Component(pgsql, "CashFlowDB", "PostgreSQL", "Banco de dados transacional + estruturas de leitura para consolidação.", $tags="MVP")
+}
+
+System_Ext(oidc, "Identity Provider (OIDC)", "Keycloak / Auth0 / Azure AD", "Responsável pela autenticação.", $tags="IDEAL")
+
+System_Ext(obs, "Observability Stack", "Prometheus / Grafana / Loki / OTel", "Métricas, logs e tracing.", $tags="IDEAL")
+
+' Relações
+
+Rel(merchant, frontend, "Interage via navegador", "HTTPS")
+
+Rel(frontend, oidc, "Fluxo de login OIDC/OAuth2", "IDEAL")
+Rel(frontend, apiGateway, "Chama APIs de backend", "HTTPS")
+
+Rel(apiGateway, txApi, "Roteia requisições de escrita", "HTTPS")
+Rel(apiGateway, consolApi, "Roteia requisições de leitura", "HTTPS")
+
+Rel(txApi, pgsql, "Inserção/Atualização de lançamentos", "SQL")
+Rel(consolApi, pgsql, "Consultas agregadas / views de consolidação", "SQL")
+
+Rel(consolApi, redis, "Consulta e popula cache de saldos", "IDEAL")
+
+Rel(txApi, obs, "Logs / métricas / traces", "IDEAL")
+Rel(consolApi, obs, "Logs / métricas / traces", "IDEAL")
+
+@enduml

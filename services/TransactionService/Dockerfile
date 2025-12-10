@@ -1,0 +1,29 @@
+# ============================
+# 1. Build Stage
+# ============================
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copia a solução inteira
+COPY . .
+
+# Restaura dependências
+RUN dotnet restore "./services/TransactionService/TransactionService.csproj"
+
+# Build
+RUN dotnet build "./services/TransactionService/TransactionService.csproj" -c Release -o /app/build
+
+# Publish
+RUN dotnet publish "./services/TransactionService/TransactionService.csproj" -c Release -o /app/publish
+
+# ============================
+# 2. Runtime Stage
+# ============================
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+EXPOSE 80
+
+ENTRYPOINT ["dotnet", "TransactionService.dll"]

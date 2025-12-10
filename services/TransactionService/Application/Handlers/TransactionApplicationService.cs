@@ -1,4 +1,3 @@
-using System.Text.Json;
 using TransactionService.Application.Commands;
 using TransactionService.Application.Services;
 using TransactionService.Domain.Entities;
@@ -8,15 +7,13 @@ namespace TransactionService.Application.Handlers;
 public class TransactionApplicationService
 {
     private readonly ITransactionRepository _transactionRepository;
-    private readonly IOutboxRepository _outboxRepository;
 
-    public TransactionApplicationService(ITransactionRepository transactionRepository, IOutboxRepository outboxRepository)
+    public TransactionApplicationService(ITransactionRepository transactionRepository)
     {
         _transactionRepository = transactionRepository;
-        _outboxRepository = outboxRepository;
     }
 
-    public async Task<Transaction> CreateTransactionAsync(CreateTransactionCommand command)
+    public async Task<Guid> CreateTransactionAsync(CreateTransactionCommand command, CancellationToken cancellationToken = default)
     {
         var transaction = new Transaction(
             command.MerchantId,
@@ -26,20 +23,8 @@ public class TransactionApplicationService
             command.OccurredAt
         );
 
-        await _transactionRepository.AddAsync(transaction);
+        await _transactionRepository.AddAsync(transaction, cancellationToken);
 
-        var eventPayload = JsonSerializer.Serialize(new
-        {
-            TransactionId = transaction.Id,
-            MerchantId = transaction.MerchantId,
-            Direction = transaction.Direction.ToString().ToUpper(),
-            Amount = transaction.Amount,
-            OccurredAt = transaction.OccurredAt
-        });
-
-        var outboxEvent = new OutboxEvent(transaction.Id, "TransactionCreated", eventPayload);
-        await _outboxRepository.AddAsync(outboxEvent);
-
-        return transaction;
+        return transaction.Id;
     }
 }

@@ -11,7 +11,7 @@ public class ValidationTests
     {
         // Arrange & Act
         var transaction = new Transaction(
-            Guid.NewGuid(),
+            "merchant123",
             100m,
             "BRL",
             TransactionDirection.Credit,
@@ -21,59 +21,89 @@ public class ValidationTests
         // Assert
         transaction.Should().NotBeNull();
         transaction.Id.Should().NotBeEmpty();
+        transaction.MerchantId.Should().Be("merchant123");
         transaction.Amount.Should().Be(100m);
         transaction.Currency.Should().Be("BRL");
         transaction.Direction.Should().Be(TransactionDirection.Credit);
+        transaction.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
-    public void Transaction_WithCreditDirection_ShouldHaveCorrectDirection()
+    public void Transaction_WithZeroAmount_ShouldThrowException()
     {
-        // Arrange & Act
-        var transaction = new Transaction(
-            Guid.NewGuid(),
-            50m,
-            "USD",
+        // Arrange & Act & Assert
+        var act = () => new Transaction(
+            "merchant123",
+            0m,
+            "BRL",
             TransactionDirection.Credit,
             DateTime.UtcNow
         );
 
-        // Assert
-        transaction.Direction.Should().Be(TransactionDirection.Credit);
+        act.Should().Throw<ArgumentException>().WithMessage("Amount must be greater than zero*");
     }
 
     [Fact]
-    public void Transaction_WithDebitDirection_ShouldHaveCorrectDirection()
+    public void Transaction_WithNegativeAmount_ShouldThrowException()
     {
-        // Arrange & Act
+        // Arrange & Act & Assert
+        var act = () => new Transaction(
+            "merchant123",
+            -10m,
+            "BRL",
+            TransactionDirection.Credit,
+            DateTime.UtcNow
+        );
+
+        act.Should().Throw<ArgumentException>().WithMessage("Amount must be greater than zero*");
+    }
+
+    [Fact]
+    public void Transaction_WithEmptyMerchantId_ShouldThrowException()
+    {
+        // Arrange & Act & Assert
+        var act = () => new Transaction(
+            "",
+            100m,
+            "BRL",
+            TransactionDirection.Credit,
+            DateTime.UtcNow
+        );
+
+        act.Should().Throw<ArgumentException>().WithMessage("MerchantId is required*");
+    }
+
+    [Fact]
+    public void Transaction_IsCredit_ShouldReturnTrueForCreditDirection()
+    {
+        // Arrange
         var transaction = new Transaction(
-            Guid.NewGuid(),
-            75m,
-            "EUR",
+            "merchant123",
+            100m,
+            "BRL",
+            TransactionDirection.Credit,
+            DateTime.UtcNow
+        );
+
+        // Act & Assert
+        transaction.IsCredit().Should().BeTrue();
+        transaction.IsDebit().Should().BeFalse();
+    }
+
+    [Fact]
+    public void Transaction_IsDebit_ShouldReturnTrueForDebitDirection()
+    {
+        // Arrange
+        var transaction = new Transaction(
+            "merchant123",
+            100m,
+            "BRL",
             TransactionDirection.Debit,
             DateTime.UtcNow
         );
 
-        // Assert
-        transaction.Direction.Should().Be(TransactionDirection.Debit);
-    }
-
-    [Theory]
-    [InlineData("BRL")]
-    [InlineData("USD")]
-    [InlineData("EUR")]
-    public void Transaction_WithValidCurrency_ShouldAcceptCurrency(string currency)
-    {
-        // Arrange & Act
-        var transaction = new Transaction(
-            Guid.NewGuid(),
-            100m,
-            currency,
-            TransactionDirection.Credit,
-            DateTime.UtcNow
-        );
-
-        // Assert
-        transaction.Currency.Should().Be(currency);
+        // Act & Assert
+        transaction.IsDebit().Should().BeTrue();
+        transaction.IsCredit().Should().BeFalse();
     }
 }

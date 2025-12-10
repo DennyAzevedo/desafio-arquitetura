@@ -1,0 +1,35 @@
+@startuml Transaction Service - MVP - Diagrama de Componentes
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+AddElementTag("MVP", $bgColor="#55b167ff")
+
+Container_Boundary(ts, "TransactionService API - MVP") {
+
+  Component(apiController, "TransactionsController", "ASP.NET Core Controller", "Recebe requisições HTTP de criação de lançamentos.", $tags="MVP")
+
+  Component(appService, "TransactionApplicationService", "Application Service", "Orquestra validação, criação de entidades e persistência.", $tags="MVP")
+
+  Component(domainEntity, "Transaction", "Domain Entity", "Representa uma transação de crédito/débito com regras de negócio básicas.", $tags="MVP")
+
+  Component(domainService, "TransactionDomainService", "Domain Service", "Opcional: encapsula regras de negócio mais complexas.", $tags="MVP")
+
+  Component(repoInterface, "ITransactionRepository", "Interface de Repositório", "Abstrai acesso a dados de transações.", $tags="MVP")
+
+  Component(repoImpl, "TransactionRepository", "Infra Repository (EF Core)", "Implementa o repositório usando Entity Framework Core.", $tags="MVP")
+
+  Component(dbContext, "TransactionDbContext", "EF Core DbContext", "Gerencia o mapeamento das entidades de transação para o PostgreSQL.", $tags="MVP")
+}
+
+ContainerDb(pgsql, "CashFlowDB", "PostgreSQL", "Tabelas de lançamentos.", $tags="MVP")
+
+Rel(apiController, appService, "Invoca")
+Rel(appService, domainEntity, "Cria e manipula")
+Rel(appService, domainService, "Utiliza (se necessário)")
+Rel(appService, repoInterface, "Usa para persistir")
+Rel(repoImpl, dbContext, "Usa")
+Rel(dbContext, pgsql, "Leitura/Escrita", "SQL")
+
+' Ligação interface <-> implementação
+Rel(repoInterface, repoImpl, "Implementado por")
+
+@enduml

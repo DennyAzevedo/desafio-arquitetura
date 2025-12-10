@@ -28,7 +28,7 @@ public class TransactionRepositoryTests : IDisposable
     {
         // Arrange
         var transaction = new Transaction(
-            Guid.NewGuid(),
+            "merchant123",
             100m,
             "BRL",
             TransactionDirection.Credit,
@@ -41,39 +41,54 @@ public class TransactionRepositoryTests : IDisposable
         // Assert
         var savedTransaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == transaction.Id);
         savedTransaction.Should().NotBeNull();
-        savedTransaction!.Amount.Should().Be(100m);
+        savedTransaction!.MerchantId.Should().Be("merchant123");
+        savedTransaction.Amount.Should().Be(100m);
         savedTransaction.Currency.Should().Be("BRL");
         savedTransaction.Direction.Should().Be(TransactionDirection.Credit);
     }
 
     [Fact]
-    public async Task AddAsync_WithDebitTransaction_ShouldPersistCorrectly()
+    public async Task GetByIdAsync_ShouldReturnTransaction()
     {
         // Arrange
         var transaction = new Transaction(
-            Guid.NewGuid(),
+            "merchant456",
             50m,
             "USD",
             TransactionDirection.Debit,
             DateTime.UtcNow
         );
-
-        // Act
         await _repository.AddAsync(transaction);
 
+        // Act
+        var result = await _repository.GetByIdAsync(transaction.Id);
+
         // Assert
-        var savedTransaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == transaction.Id);
-        savedTransaction.Should().NotBeNull();
-        savedTransaction!.Direction.Should().Be(TransactionDirection.Debit);
-        savedTransaction.Amount.Should().Be(50m);
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(transaction.Id);
+        result.MerchantId.Should().Be("merchant456");
+        result.Direction.Should().Be(TransactionDirection.Debit);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WithNonExistentId_ShouldReturnNull()
+    {
+        // Arrange
+        var nonExistentId = Guid.NewGuid();
+
+        // Act
+        var result = await _repository.GetByIdAsync(nonExistentId);
+
+        // Assert
+        result.Should().BeNull();
     }
 
     [Fact]
     public async Task AddAsync_MultipleTransactions_ShouldPersistAll()
     {
         // Arrange
-        var transaction1 = new Transaction(Guid.NewGuid(), 100m, "BRL", TransactionDirection.Credit, DateTime.UtcNow);
-        var transaction2 = new Transaction(Guid.NewGuid(), 200m, "USD", TransactionDirection.Debit, DateTime.UtcNow);
+        var transaction1 = new Transaction("merchant1", 100m, "BRL", TransactionDirection.Credit, DateTime.UtcNow);
+        var transaction2 = new Transaction("merchant2", 200m, "USD", TransactionDirection.Debit, DateTime.UtcNow);
 
         // Act
         await _repository.AddAsync(transaction1);

@@ -1,0 +1,31 @@
+@startuml Consolidation Service - MVP - Diagrama de Componentes
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+AddElementTag("MVP", $bgColor="#55b167ff")
+
+Container_Boundary(cs, "ConsolidationService API - MVP") {
+
+  Component(apiController, "ConsolidationsController", "ASP.NET Core Controller", "Exponibiliza consultas de saldo diário consolidado.", $tags="MVP")
+
+  Component(queryService, "ConsolidationQueryService", "Application Service", "Orquestra a obtenção de saldos consolidados.", $tags="MVP")
+
+  Component(domainEntity, "DailyBalance", "Domain Entity", "Representa o saldo diário consolidado (créditos, débitos, saldo).", $tags="MVP")
+
+  Component(repoInterface, "IDailyBalanceRepository", "Interface de Repositório", "Abstrai acesso a dados de consolidação diária.", $tags="MVP")
+
+  Component(repoImpl, "DailyBalanceRepository", "Infra Repository (EF Core / SQL)", "Implementa as consultas usando EF Core ou SQL customizado.", $tags="MVP")
+
+  Component(dbContext, "ReadDbContext", "EF Core DbContext", "Gerencia entidades de leitura (DailyBalance).", $tags="MVP")
+}
+
+ContainerDb(pgsql, "CashFlowDB", "PostgreSQL", "Banco único com lançamentos e consolidados.", $tags="MVP")
+
+Rel(apiController, queryService, "Invoca")
+Rel(queryService, repoInterface, "Consulta")
+Rel(repoImpl, dbContext, "Usa")
+Rel(dbContext, pgsql, "SELECT agregado", "SQL")
+
+Rel(repoInterface, repoImpl, "Implementado por")
+Rel(queryService, domainEntity, "Retorna/usa")
+
+@enduml

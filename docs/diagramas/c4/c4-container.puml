@@ -1,0 +1,63 @@
+@startuml Desafio - Diagrama Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+AddElementTag("MVP", $bgColor="#55b167ff")
+AddElementTag("IDEAL", $bgColor="#6793d6ff")
+
+Person(merchant, "Comerciante", "Usuário do sistema.", $tags="MVP")
+Person(sre, "SRE / Observabilidade", "Monitora o ambiente.", $tags="IDEAL")
+
+System_Boundary(cashflow, "Cash Flow System") {
+
+  ' IDEAL: Frontend & API Gateway
+  Container(frontend, "Cash Flow Web App", "SPA (React/Angular/Blazor)", "Interface web para lançamentos e consultas.", $tags="IDEAL")
+
+  Container(apigw, "API Gateway", "NGINX / YARP / Kong", "Roteia requisições, aplica autenticação e políticas cross-cutting.", $tags="IDEAL")
+
+  ' MVP / Ideal: microsserviços
+  Container(transactionApi, "TransactionService API", "ASP.NET Core", "Registra lançamentos de crédito/débito.", $tags="MVP")
+
+  Container(consolidationApi, "ConsolidationService API", "ASP.NET Core", "Fornece consultas de saldo diário consolidado.", $tags="MVP")
+
+  ' MVP / Ideal: banco relacional compartilhado
+  ContainerDb(pgsql, "CashFlowDB", "PostgreSQL", "Banco de dados relacional contendo lançamentos e visões para consolidação.", $tags="MVP")
+
+  ' IDEAL: cache de leitura
+  Container(redis, "Redis Cache", "Redis", "Cache de consultas de saldo diário para alta performance.", $tags="IDEAL")
+}
+
+' Sistemas externos
+System_Ext(oidc, "Identity Provider (OIDC)", "Keycloak / Auth0 / Azure AD", "Responsável pela autenticação dos usuários no cenário ideal.", $tags="IDEAL")
+
+System_Ext(obs, "Observability Stack", "Prometheus / Grafana / Loki / OTel", "Coleta logs, métricas e traces.", $tags="IDEAL")
+
+' Relações - MVP
+
+Rel(merchant, transactionApi, "Registra lançamentos (HTTP/JSON)", "MVP")
+Rel(merchant, consolidationApi, "Consulta saldo diário (HTTP/JSON)", "MVP")
+
+Rel(transactionApi, pgsql, "INSERT/UPDATE/SELECT em tabelas de lançamentos", "SQL", "MVP")
+Rel(consolidationApi, pgsql, "SELECT agregado para consolidação diária", "SQL", "MVP")
+
+' Relações - Ideal
+
+Rel(merchant, frontend, "Usa via navegador (HTTPS)", "IDEAL")
+Rel(frontend, oidc, "Login OIDC/OAuth2", "IDEAL")
+Rel(frontend, apigw, "Consome APIs (HTTPS)", "IDEAL")
+
+Rel(apigw, transactionApi, "Encaminha chamadas de escrita", "HTTPS", "IDEAL")
+Rel(apigw, consolidationApi, "Encaminha chamadas de leitura", "HTTPS", "IDEAL")
+
+Rel(consolidationApi, redis, "Consulta/Atualiza cache de saldo diário", "IDEAL")
+
+' DB continua comum nos dois cenários
+Rel(transactionApi, pgsql, "Leitura/Escrita de lançamentos", "SQL")
+Rel(consolidationApi, pgsql, "Leitura de dados consolidados ou views", "SQL")
+
+' Observabilidade (Ideal)
+Rel(transactionApi, obs, "Logs / métricas / traces", "IDEAL")
+Rel(consolidationApi, obs, "Logs / métricas / traces", "IDEAL")
+Rel(sre, obs, "Consulta dashboards", "IDEAL")
+
+@enduml
+

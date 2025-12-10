@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ConsolidationService.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/consolidations")]
 public class ConsolidationsController : ControllerBase
 {
     private readonly ConsolidationQueryService _queryService;
@@ -16,13 +16,13 @@ public class ConsolidationsController : ControllerBase
     }
 
     [HttpGet("daily")]
-    public async Task<IActionResult> GetDailyBalance([FromQuery] Guid merchantId, [FromQuery] DateTime date)
+    public async Task<IActionResult> GetDailyBalance([FromQuery] string merchantId, [FromQuery] DateTime date, CancellationToken cancellationToken = default)
     {
-        if (merchantId == Guid.Empty)
+        if (string.IsNullOrWhiteSpace(merchantId))
             return BadRequest("MerchantId is required");
 
         var query = new GetDailyBalanceQuery(merchantId, date);
-        var result = await _queryService.GetDailyBalanceAsync(query);
+        var result = await _queryService.GetDailyBalanceAsync(query, cancellationToken);
 
         if (result == null)
             return NotFound();

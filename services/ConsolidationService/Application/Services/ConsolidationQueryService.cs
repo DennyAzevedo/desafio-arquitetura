@@ -12,14 +12,14 @@ public class ConsolidationQueryService
         _repository = repository;
     }
 
-    public async Task<DailyBalanceDto?> GetDailyBalanceAsync(GetDailyBalanceQuery query)
+    public async Task<DailyBalanceResponseDto?> GetDailyBalanceAsync(GetDailyBalanceQuery query, CancellationToken cancellationToken = default)
     {
-        var dailyBalance = await _repository.GetByMerchantAndDateAsync(query.MerchantId, query.Date.Date);
+        var dailyBalance = await _repository.GetDailyBalanceAsync(query.MerchantId, query.Date.Date, cancellationToken);
         
         if (dailyBalance == null)
             return null;
 
-        return new DailyBalanceDto(
+        return new DailyBalanceResponseDto(
             dailyBalance.MerchantId,
             dailyBalance.Date,
             dailyBalance.TotalCredit,

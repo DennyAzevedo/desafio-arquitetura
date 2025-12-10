@@ -1,7 +1,7 @@
 namespace ConsolidationService.Api.Dtos;
 
-public record DailyBalanceDto(
-    Guid MerchantId,
+public record DailyBalanceResponseDto(
+    string MerchantId,
     DateTime Date,
     decimal TotalCredit,
     decimal TotalDebit,

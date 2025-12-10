@@ -1,7 +1,7 @@
 namespace TransactionService.Api.Dtos;
 
-public record CreateTransactionDto(
-    Guid MerchantId,
+public record CreateTransactionRequestDto(
+    string MerchantId,
     decimal Amount,
     string Currency,
     string Direction,
