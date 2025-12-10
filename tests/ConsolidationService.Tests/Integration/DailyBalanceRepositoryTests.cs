@@ -29,7 +29,7 @@ public class DailyBalanceRepositoryTests : IDisposable
     public async Task GetDailyBalanceAsync_WhenNoTransactions_ShouldReturnNull()
     {
         var merchantId = "merchant123";
-        var date = DateTime.UtcNow.Date;
+        var date = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var result = await _repository.GetDailyBalanceAsync(merchantId, date);
 
@@ -40,12 +40,12 @@ public class DailyBalanceRepositoryTests : IDisposable
     public async Task GetDailyBalanceAsync_WithTransactions_ShouldCalculateCorrectly()
     {
         var merchantId = "merchant123";
-        var date = DateTime.UtcNow.Date;
+        var date = DateOnly.FromDateTime(DateTime.UtcNow);
         
         // Add test transactions
-        await AddTransactionAsync(merchantId, 100m, 0, date); // Credit
-        await AddTransactionAsync(merchantId, 50m, 0, date);  // Credit
-        await AddTransactionAsync(merchantId, 30m, 1, date);  // Debit
+        await AddTransactionAsync(merchantId, 100m, 0, date.ToDateTime(TimeOnly.MinValue)); // Credit
+        await AddTransactionAsync(merchantId, 50m, 0, date.ToDateTime(TimeOnly.MinValue));  // Credit
+        await AddTransactionAsync(merchantId, 30m, 1, date.ToDateTime(TimeOnly.MinValue));  // Debit
 
         var result = await _repository.GetDailyBalanceAsync(merchantId, date);
 
@@ -61,11 +61,11 @@ public class DailyBalanceRepositoryTests : IDisposable
     public async Task GetDailyBalanceAsync_WithDifferentDates_ShouldFilterByDate()
     {
         var merchantId = "merchant123";
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var yesterday = today.AddDays(-1);
         
-        await AddTransactionAsync(merchantId, 100m, 0, today);
-        await AddTransactionAsync(merchantId, 200m, 0, yesterday);
+        await AddTransactionAsync(merchantId, 100m, 0, today.ToDateTime(TimeOnly.MinValue));
+        await AddTransactionAsync(merchantId, 200m, 0, yesterday.ToDateTime(TimeOnly.MinValue));
 
         var result = await _repository.GetDailyBalanceAsync(merchantId, today);
 

@@ -32,7 +32,7 @@ public class TransactionRepositoryTests : IDisposable
             100m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         // Act
@@ -56,7 +56,7 @@ public class TransactionRepositoryTests : IDisposable
             50m,
             "USD",
             TransactionDirection.Debit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
         await _repository.AddAsync(transaction);
 
@@ -87,8 +87,8 @@ public class TransactionRepositoryTests : IDisposable
     public async Task AddAsync_MultipleTransactions_ShouldPersistAll()
     {
         // Arrange
-        var transaction1 = new Transaction("merchant1", 100m, "BRL", TransactionDirection.Credit, DateTime.UtcNow);
-        var transaction2 = new Transaction("merchant2", 200m, "USD", TransactionDirection.Debit, DateTime.UtcNow);
+        var transaction1 = new Transaction("merchant1", 100m, "BRL", TransactionDirection.Credit, DateOnly.FromDateTime(DateTime.UtcNow));
+        var transaction2 = new Transaction("merchant2", 200m, "USD", TransactionDirection.Debit, DateOnly.FromDateTime(DateTime.UtcNow));
 
         // Act
         await _repository.AddAsync(transaction1);

@@ -20,7 +20,7 @@ public class ConsolidationQueryServiceTests
     public async Task GetDailyBalanceAsync_WithValidData_ShouldReturnDto()
     {
         var merchantId = "merchant123";
-        var date = DateTime.UtcNow.Date;
+        var date = DateOnly.FromDateTime(DateTime.UtcNow);
         var dailyBalance = new DailyBalance(merchantId, date, 100m, 30m);
 
         _repositoryMock.Setup(x => x.GetDailyBalanceAsync(merchantId, date, It.IsAny<CancellationToken>()))
@@ -40,7 +40,7 @@ public class ConsolidationQueryServiceTests
     public async Task GetDailyBalanceAsync_WhenNoData_ShouldReturnNull()
     {
         var merchantId = "merchant123";
-        var date = DateTime.UtcNow.Date;
+        var date = DateOnly.FromDateTime(DateTime.UtcNow);
 
         _repositoryMock.Setup(x => x.GetDailyBalanceAsync(merchantId, date, It.IsAny<CancellationToken>()))
             .ReturnsAsync((DailyBalance?)null);

@@ -6,6 +6,6 @@ public record TransactionResponseDto(
     decimal Amount,
     string Currency,
     string Direction,
-    DateTime OccurredAt,
+    DateOnly OccurredAt,
     DateTime CreatedAt
 );

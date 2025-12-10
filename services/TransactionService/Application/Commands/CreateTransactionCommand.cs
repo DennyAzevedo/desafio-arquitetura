@@ -7,5 +7,5 @@ public record CreateTransactionCommand(
     decimal Amount,
     string Currency,
     TransactionDirection Direction,
-    DateTime OccurredAt
+    DateOnly OccurredAt
 );

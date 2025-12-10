@@ -24,6 +24,9 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-EXPOSE 80
+# Define explicitamente a porta interna
+ENV ASPNETCORE_URLS=http://+:8080
+
+EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "TransactionService.dll"]

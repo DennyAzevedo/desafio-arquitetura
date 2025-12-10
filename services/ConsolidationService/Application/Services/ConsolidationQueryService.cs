@@ -14,7 +14,7 @@ public class ConsolidationQueryService
 
     public async Task<DailyBalanceResponseDto?> GetDailyBalanceAsync(GetDailyBalanceQuery query, CancellationToken cancellationToken = default)
     {
-        var dailyBalance = await _repository.GetDailyBalanceAsync(query.MerchantId, query.Date.Date, cancellationToken);
+        var dailyBalance = await _repository.GetDailyBalanceAsync(query.MerchantId, query.Date, cancellationToken);
         
         if (dailyBalance == null)
             return null;

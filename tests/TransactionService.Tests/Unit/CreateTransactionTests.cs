@@ -28,7 +28,7 @@ public class CreateTransactionTests
             100m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         // Act
@@ -53,7 +53,7 @@ public class CreateTransactionTests
             50m,
             "USD",
             TransactionDirection.Debit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         // Act
@@ -75,7 +75,7 @@ public class CreateTransactionTests
             200m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         // Act

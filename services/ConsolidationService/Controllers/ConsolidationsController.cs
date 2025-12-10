@@ -16,7 +16,7 @@ public class ConsolidationsController : ControllerBase
     }
 
     [HttpGet("daily")]
-    public async Task<IActionResult> GetDailyBalance([FromQuery] string merchantId, [FromQuery] DateTime date, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetDailyBalance([FromQuery] string merchantId, [FromQuery] DateOnly date, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(merchantId))
             return BadRequest("MerchantId is required");

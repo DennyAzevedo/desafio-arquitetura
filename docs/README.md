@@ -177,11 +177,44 @@ Pré-requisitos:
 - SDK .NET 8
 - Git
 
-### 6.1. Subir serviços + banco
+### 6.1. Migrations e Inicialização Automática do Banco de Dados
+
+Este projeto utiliza Entity Framework Core Migrations para criar e atualizar automaticamente o esquema do banco PostgreSQL durante a inicialização do sistema.
+
+#### 6.1.1. Como funciona
+
+- O banco PostgreSQL é iniciado via Docker Compose.
+- O TransactionService aplica automaticamente suas migrations no momento do startup, criando as tabelas necessárias caso ainda não existam.
+- O ConsolidationService realiza apenas leitura e não aplica migrations no MVP.
+- Não é necessário executar scripts manuais, comandos de CLI ou preparar o banco previamente.
+
+#### 6.1.2. Gerar os migrations
 
 ```bash
-docker compose up -d
+cd services/TransactionService
+dotnet ef migrations add InitialCreate -o Infrastructure/Persistence/Migrations
 ```
+
+#### 6.1.3 Para executar o sistema
+
+Basta rodar:
+
+```bash
+docker compose up --build
+```
+
+O ambiente será iniciado com:
+
+- Banco criado
+- Tabelas aplicadas
+- Microsserviços funcionando e saudáveis
+
+#### 6.1.4. Por que adotamos este modelo?
+
+- Facilita a execução do projeto pelo avaliador (zero passos manuais)
+- Garante consistência entre ambientes
+- Evita divergências de schema
+- Mantém o processo simples no MVP, mas compatível com pipelines de CI/CD
 
 ### 6.2. Rodar testes
 

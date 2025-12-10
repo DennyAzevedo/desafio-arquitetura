@@ -14,12 +14,10 @@ public class DailyBalanceRepository : IDailyBalanceRepository
         _context = context;
     }
 
-    public async Task<DailyBalance?> GetDailyBalanceAsync(string merchantId, DateTime date, CancellationToken cancellationToken = default)
+    public async Task<DailyBalance?> GetDailyBalanceAsync(string merchantId, DateOnly date, CancellationToken cancellationToken = default)
     {
-        var targetDate = date.Date;
-        
         var transactions = await _context.Set<TransactionEntity>()
-            .Where(t => t.MerchantId == merchantId && t.OccurredAt.Date == targetDate)
+            .Where(t => t.MerchantId == merchantId && DateOnly.FromDateTime(t.OccurredAt) == date)
             .ToListAsync(cancellationToken);
 
         if (!transactions.Any())
@@ -28,6 +26,6 @@ public class DailyBalanceRepository : IDailyBalanceRepository
         var totalCredit = transactions.Where(t => t.Direction == 0).Sum(t => t.Amount);
         var totalDebit = transactions.Where(t => t.Direction == 1).Sum(t => t.Amount);
 
-        return new DailyBalance(merchantId, targetDate, totalCredit, totalDebit);
+        return new DailyBalance(merchantId, date, totalCredit, totalDebit);
     }
 }

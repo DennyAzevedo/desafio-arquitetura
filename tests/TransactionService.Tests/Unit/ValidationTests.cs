@@ -15,7 +15,7 @@ public class ValidationTests
             100m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         // Assert
@@ -37,7 +37,7 @@ public class ValidationTests
             0m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         act.Should().Throw<ArgumentException>().WithMessage("Amount must be greater than zero*");
@@ -52,7 +52,7 @@ public class ValidationTests
             -10m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         act.Should().Throw<ArgumentException>().WithMessage("Amount must be greater than zero*");
@@ -67,7 +67,7 @@ public class ValidationTests
             100m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         act.Should().Throw<ArgumentException>().WithMessage("MerchantId is required*");
@@ -82,7 +82,7 @@ public class ValidationTests
             100m,
             "BRL",
             TransactionDirection.Credit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         // Act & Assert
@@ -99,7 +99,7 @@ public class ValidationTests
             100m,
             "BRL",
             TransactionDirection.Debit,
-            DateTime.UtcNow
+            DateOnly.FromDateTime(DateTime.UtcNow)
         );
 
         // Act & Assert
