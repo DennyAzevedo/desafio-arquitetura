@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: cashflow
       POSTGRES_PASSWORD: cashflow123
-      POSTGRES_DB: cashflowdb
+      POSTGRES_DB: cashflow_db
     ports:
       - "5432:5432"
     volumes:
@@ -16,7 +16,7 @@ services:
     networks:
       - cashflow-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cashflow"]
+      test: ["CMD-SHELL", "pg_isready -U cashflow -d cashflow_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,9 +31,9 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__CashFlowDb: "Host=postgres;Database=cashflowdb;Username=cashflow;Password=cashflow123"
+      ConnectionStrings__CashFlowDb: "Host=postgres;Database=cashflow_db;Username=cashflow;Password=cashflow123"
     ports:
-      - "5001:80"
+      - "5001:8080"
     networks:
       - cashflow-net
     restart: on-failure
@@ -53,9 +53,9 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__CashFlowDb: "Host=postgres;Database=cashflowdb;Username=cashflow;Password=cashflow123"
+      ConnectionStrings__CashFlowDb: "Host=postgres;Database=cashflow_db;Username=cashflow;Password=cashflow123"
     ports:
-      - "5002:80"
+      - "5002:8080"
     networks:
       - cashflow-net
     restart: on-failure
